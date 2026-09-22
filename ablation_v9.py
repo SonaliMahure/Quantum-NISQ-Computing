@@ -1,32 +1,4 @@
 """
-ablation_v9.py
-Paper-ready final experimental ablation for the Quantum_RL_optimizer project.
-
-Key methodological correction
-------------------------------
-The environment contains seven transformation entries, but
-"cx_cancellation" is an exact duplicate of "commutative_cancellation":
-both construct PassManager([CommutativeCancellation()]).
-
-V9 therefore treats the six UNIQUE transformation families as the action
-space and does not learn STOP.  STOP is a control/termination operation,
-not an optimization operator.
-
-Policy
-------
-The previous linear Q-learning formulation was poorly matched to this
-environment because every transformation has an immediate, deterministic
-cost change and several actions are no-ops on most circuits.  V8 uses a
-cost-aware contextual bandit:
-
-  score(a|s) = shrunk_mean_reward(a,s)
-              + exploration_bonus(a,s)
-              - repeat_penalty(a,s)
-
-The learner updates an action's reward statistics after each real Qiskit
-call.  The context is the current circuit metrics and recent action
-history.  This directly learns which pass is useful in the current state,
-without bootstrapping through a terminal STOP value.
 
 Experimental methods
 ---------------------
