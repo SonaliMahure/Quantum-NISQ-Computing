@@ -646,7 +646,7 @@ def evaluate_random(suite, args, seed, results, trace):
 
 
 def diagnostic(args):
-    suite = default_benchmark_suite()
+    suite = default_benchmark_suite(args.qasm_dir)
 
     if args.circuits:
         wanted = set(args.circuits)
@@ -725,33 +725,7 @@ def write_policy_report(results, trace, path):
     rdf = pd.DataFrame(results)
     tdf = pd.DataFrame(trace)
 
-    lines = [
-        "V9 PAPER-READY POLICY / ABLATION REPORT",
-        "=" * 78,
-        "",
-        "Action-space correction:",
-        "  environment.py contains 8 entries: 7 transformations + STOP.",
-        "  Action 1 commutative_cancellation and action 2 cx_cancellation",
-        "  construct the same CommutativeCancellation pass.",
-        "  V8 therefore evaluates six unique transformation families.",
-        "  STOP is excluded from the optimization policy and is represented",
-        "  by the fixed max-step/patience termination rule.",
-        "",
-        "Policy correction:",
-        "  V7 used linear Q-learning with bootstrapped next-state values.",
-        "  Here rewards are immediate pass-induced cost changes and many",
-        "  transformations are no-ops. V8 uses a contextual empirical bandit",
-        "  with shrinkage, uncertainty-aware exploration and repeat penalty.",
-        "",
-        "Ablation justification:",
-        "  Full RL optimizes the environment's composite circuit cost.",
-        "  Depth-only RL optimizes depth only.",
-        "  Gate-only RL optimizes total gate count only.",
-        "  Random action samples the same six actions uniformly.",
-        "  All methods share the same benchmarks, seeds, step budget and",
-        "  5-to-30-second timeout mechanism.",
-        "",
-    ]
+    lines = [    ]
 
     if not rdf.empty:
         summary = (
@@ -787,7 +761,7 @@ def write_policy_report(results, trace, path):
     lines.extend(
         [
             "Interpretation rule:",
-            "  V9 should only be called an effective policy if it improves",
+            "  This should only be called an effective policy if it improves",
             "  the final objective relative to Random without sacrificing",
             "  process fidelity/correctness. Otherwise the result is reported",
             "  as a negative/neutral ablation rather than tuned until it wins.",
@@ -804,7 +778,7 @@ def main():
     mp.freeze_support()
 
     p = argparse.ArgumentParser(
-        description="Final V9 paper-ready candidate-search ablation"
+        description="Ablation"
     )
     p.add_argument("--episodes", type=int, default=50)
     p.add_argument("--seeds", type=int, default=3)
@@ -822,6 +796,12 @@ def main():
                    action="store_false")
     p.add_argument("--fidelity-threshold", type=float, default=1.0 - 1e-8)
     p.add_argument("--circuits", nargs="*", default=None)
+    p.add_argument(
+    "--qasm-dir",
+    type=str,
+    default=None,
+    help="Optional directory containing OpenQASM 2.0 files",
+)
     p.add_argument("--diagnostic", action="store_true")
     p.add_argument("--diagnostic-output", default="ablation_v9_diagnostic.csv")
     p.add_argument("--results-output", default="ablation_v9_results.csv")
@@ -840,7 +820,6 @@ def main():
 
     print("=" * 78)
     print("Starting ablation_v9.py")
-    print("FINAL PAPER-READY COST-AWARE POLICY ABLATION")
     print(
         f"Timeout: {args.qiskit_timeout:.1f}s -> "
         f"{args.slow_qiskit_timeout:.1f}s"
@@ -862,7 +841,7 @@ def main():
         diagnostic(args)
         return
 
-    suite = default_benchmark_suite()
+    suite = default_benchmark_suite(args.qasm_dir)
 
     if args.circuits:
         wanted = set(args.circuits)
