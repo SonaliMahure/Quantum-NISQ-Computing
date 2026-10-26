@@ -770,9 +770,11 @@ def main():
     p.add_argument("--circuits", nargs="*", default=None)
     p.add_argument(
     "--qasm-dir",
+    p.add_argument(
+    "--qasm-dir",
     type=str,
     default=None,
-    help="Optional directory containing OpenQASM 2.0 files",
+    help="Directory containing OpenQASM 2.0 benchmark files",
 )
     p.add_argument("--diagnostic", action="store_true")
     p.add_argument("--diagnostic-output", default="ablation_v9_diagnostic.csv")

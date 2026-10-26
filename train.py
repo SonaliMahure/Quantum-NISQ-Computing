@@ -40,9 +40,10 @@ def main():
                         help="GA population size")
     parser.add_argument("--circuits", nargs="*", default=None,
                         help="Subset of benchmark circuit names to use (default: all)")
+    parser.add_argument("--qasm-dir", type=str, default=None,
+                        help="Directory containing OpenQASM 2.0 benchmark files")
     args = parser.parse_args()
-
-    suite = default_benchmark_suite()
+    suite = default_benchmark_suite(args.qasm_dir)
 
     if args.circuits:
         suite = {

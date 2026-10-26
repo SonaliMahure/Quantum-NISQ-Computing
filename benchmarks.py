@@ -5,10 +5,14 @@ Standard benchmark circuits + evaluation metrics (gate count, depth,
 2-qubit gate count, estimated NISQ fidelity, and an exact-equivalence
 correctness check via statevector/operator comparison).
 """
-
 from __future__ import annotations
+
+from pathlib import Path
 import time
 import numpy as np
+
+from qiskit import QuantumCircuit
+from environment import estimate_fidelity, _gate_split
 
 from qiskit import QuantumCircuit, transpile
 from qiskit.circuit.library import QFT, GroverOperator
@@ -16,8 +20,52 @@ from qiskit.circuit.random import random_circuit
 from qiskit.quantum_info import Statevector, Operator, process_fidelity
 
 from environment import estimate_fidelity, _gate_split
+def load_qasm_dataset(qasm_dir):
+    """
+    Recursively load OpenQASM 2.0 files as QuantumCircuit objects.
 
+    Parameters
+    ----------
+    qasm_dir : str or Path or None
+        Root directory containing .qasm files.
 
+    Returns
+    -------
+    dict
+        Mapping of circuit names to QuantumCircuit objects.
+    """
+    root = Path(qasm_dir)
+    
+
+    if not root.exists():
+        raise FileNotFoundError(
+            f"QASM dataset directory does not exist: {root}"
+        )
+
+    if not root.is_dir():
+        raise NotADirectoryError(
+            f"QASM dataset path is not a directory: {root}"
+        )
+
+    circuits = {}
+
+    for qasm_file in sorted(root.rglob("*.qasm")):
+        try:
+            circuit = QuantumCircuit.from_qasm_file(str(qasm_file))
+        except Exception as exc:
+            print(f"Skipping {qasm_file}: {exc}")
+            continue
+
+        # Use filename as circuit name.
+        circuits[f"qasm_{qasm_file.stem}"] = circuit
+
+    print(
+        f"Loaded {len(circuits)} OpenQASM circuit(s) from {root}"
+    )
+
+    return circuits
+
+    
 # --------------------------------------------------------------------------
 # Benchmark circuit builders
 # --------------------------------------------------------------------------
@@ -69,7 +117,6 @@ def grover(n=3) -> QuantumCircuit:
 
     return qc
 
-
 def randcirc(n=5, depth=15, seed=42) -> QuantumCircuit:
     qc = random_circuit(n, depth, max_operands=2, seed=seed)
     qc.name = f"randcirc{n}"
@@ -90,14 +137,19 @@ def adder(n_bits=3) -> QuantumCircuit:
     return qc
 
 
-def default_benchmark_suite() -> dict:
-    return {
+def default_benchmark_suite(qasm_dir=None) -> dict:
+    suite = {
         "ghz5": ghz(5),
         "qft4": qft(4),
         "bv6": bernstein_vazirani(6),
         "randcirc": randcirc(5, 15),
         "grover3": grover(3),
     }
+
+    if qasm_dir is not None:
+        suite.update(load_qasm_dataset(qasm_dir))
+
+    return suite
 
 
 # --------------------------------------------------------------------------
